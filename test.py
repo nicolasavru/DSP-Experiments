@@ -18,31 +18,34 @@ def writewav(filename, data):
 
     wave.close()
 
-im = Image.open("test3.png")
+im = Image.open("test4.png")
 size = im.size
 d = list(im.getdata())
 #print d
+#print len(d)
 #print size
 out = oscillator(0, freq=1000)
 print out
 xlen = 30 / float(size[0])
 #print xlen
-
 def magnitude(pixel):
     return np.sqrt(pixel[0]**2 + pixel[1]**2 + pixel[2]**2)
 
-for x in range(size[0]):
+xres = size[0]
+yres = size[1]
+
+for x in range(xres):
     print x, x*xlen, x*xlen + xlen
     t = np.arange(x*xlen, x*xlen + xlen, 1./44100)
-    print d[x], magnitude(d[x])
     tone = np.zeros(t.size)
-    for y in range(size[1]):
-        print magnitude(d[x+y])
-        if magnitude(d[x+y]) > 100:
-            tone = np.add(tone, oscillator(t, freq=100*y))
-    print tone
+    for y in range(yres):
+        if magnitude(d[x+xres*y]) > 100:
+            print x+xres*y, "({0}, {1})".format(x, y),\
+                  d[x+xres*y], magnitude(d[x+xres*y]), 200*(yres-y)
+            tone = np.add(tone, oscillator(t, freq=200*(yres - y)))
+#    print tone
     out = np.append(out,tone)
-    print out, out.size
+#    print out, out.size
 print out.size
 t = np.arange(0, 10, 1./44100)
 #freq = oscillator(t, freq=6, amp=15, base=1000)
