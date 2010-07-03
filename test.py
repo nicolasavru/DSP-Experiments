@@ -43,7 +43,7 @@ def writewav(filename, numChannels, sampleRate, bitsPerSample, time, data):
 
     wave.close()
 
-im = Image.open("test.png")
+im = Image.open("reddit.jpg")
 size = im.size
 d = list(im.getdata())
 #print d
@@ -61,11 +61,9 @@ xlen = time / float(size[0])
 out = oscillator(0, freq=1000)
 
 for x in range(xres):
-    print x, x*xlen, x*xlen + xlen
-                                        #reduce overlapping, if necessary
-    t = np.arange(x*xlen, x*xlen + xlen - 0./44100, 1./44100)
+#    print x, x*xlen, x*xlen + xlen
+    t = np.arange(x*xlen, x*xlen + xlen, 1./44100)
     tone = np.zeros(t.size)
-    yp = 0
     for y in range(yres):
         print x+xres*y, "({0}, {1})".format(x, y),\
               d[x+xres*y], 200*(yres-y)
