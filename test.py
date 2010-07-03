@@ -1,17 +1,41 @@
 import numpy as np
 import Image
+import struct
 
 
 def oscillator(x, freq=1, amp=1, base=0, phase=0):
     return base + amp * np.sin(2 * np.pi * freq * x + phase)
 
-def writewav(filename, data):
+def writewav(filename, numChannels, sampleRate, bitsPerSample, time, data):
     wave = open(filename, 'wb')
 
-    # .wav header: 30 s at 44100 Hz, 1 channel of 16 bit signed samples
-    wave.write('RIFF\x14`(\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00D'
-               '\xac\x00\x00\x88X\x01\x00\x02\x00\x10\x00data\xf0_(\x00')
+    dataSize = time * sampleRate *  numChannels * bitsPerSample / 8
 
+    #https://ccrma.stanford.edu/courses/422/projects/WaveFormat/
+    ChunkID = 'RIFF'
+    ChunkSize = struct.pack('<I', dataSize + 36)
+    Format = 'WAVE'
+    Subchunk1ID = 'fmt '
+    Subchunk1Size = struct.pack('<I', 16)
+    AudioFormat = struct.pack('<H', 1)
+    NumChannels = struct.pack('<H', numChannels)
+    SampleRate = struct.pack('<I', sampleRate)
+    ByteRate = struct.pack('<I', sampleRate * numChannels * bitsPerSample / 8)
+    BlockAlign = struct.pack('<H', numChannels * bitsPerSample / 8)
+    BitsPerSample = struct.pack('<H', bitsPerSample)
+    Subchunk2ID = 'data'
+    Subchunk2Size = struct.pack('<I', dataSize)
+
+    header = ChunkID + ChunkSize + Format + Subchunk1ID + Subchunk1Size +\
+             AudioFormat + NumChannels + SampleRate + ByteRate + BlockAlign +\
+             BitsPerSample + Subchunk2ID + Subchunk2Size
+    wave.write(header)
+
+    # .wav header: 30 s at 44100 Hz, 1 channel of 16 bit signed samples
+#    wave.write('RIFF\x14`(\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00D'
+#               '\xac\x00\x00\x88X\x01\x00\x02\x00\x10\x00data\xf0_(\x00')
+
+                                                             #little endian
     # write float64 data as signed int16
     #amplitude/volume, max value is 32768
     #higher amplitude causes noise (vertical bars)
@@ -25,15 +49,16 @@ d = list(im.getdata())
 #print d
 #print len(d)
 #print size
-out = oscillator(0, freq=1000)
-print out
-xlen = 30 / float(size[0])
-#print xlen
-def magnitude(pixel):
-    return np.sqrt(pixel[0]**2 + pixel[1]**2 + pixel[2]**2)
 
 xres = size[0]
 yres = size[1]
+time = int(round(22.5 * xres / yres))
+#print time
+xlen = time / float(size[0])
+#print xlen
+
+#initialize out to a 0
+out = oscillator(0, freq=1000)
 
 for x in range(xres):
     print x, x*xlen, x*xlen + xlen
@@ -43,8 +68,7 @@ for x in range(xres):
     yp = 0
     for y in range(yres):
         print x+xres*y, "({0}, {1})".format(x, y),\
-              d[x+xres*y], magnitude(d[x+xres*y]), 200*(yres-y)
-        yp = y
+              d[x+xres*y], 200*(yres-y)
 
         p = d[x+xres*y]
         tone = np.add(tone, oscillator(t,
@@ -53,9 +77,9 @@ for x in range(xres):
     out = np.append(out,tone)
 
 #    print out, out.size
-#pad with black at end if necessary
-if out.size < 44100 * 30:
-    out = np.append(out, np.zeros(44100 * 30 - out.size))
+#pad with silence at end if necessary
+if out.size < 44100 * time:
+    out = np.append(out, np.zeros(44100 * time - out.size))
 #print out.size
 
 #constant tone experiments
@@ -71,5 +95,5 @@ if out.size < 44100 * 30:
 #tone = np.add(tone, oscillator(t, freq=440))
 #print tone.size
 
-writewav('spam.wav', out)
+writewav('spam.wav', 1, 44100, 16, time, out)
 #writewav('spam2.wav', tone)
