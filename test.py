@@ -13,12 +13,13 @@ def writewav(filename, data):
                '\xac\x00\x00\x88X\x01\x00\x02\x00\x10\x00data\xf0_(\x00')
 
     # write float64 data as signed int16
-#    (32767 * data).astype(np.int16).tofile(wave)
-    (8192 * data).astype(np.int16).tofile(wave)
+    #amplitude/volume, max value is 32768
+    #higher amplitude causes noise (vertical bars)
+    (0.5 * data).astype(np.int16).tofile(wave)
 
     wave.close()
 
-im = Image.open("test3.png")
+im = Image.open("test.png")
 size = im.size
 d = list(im.getdata())
 #print d
@@ -36,35 +37,39 @@ yres = size[1]
 
 for x in range(xres):
     print x, x*xlen, x*xlen + xlen
-    t = np.arange(x*xlen, x*xlen + xlen - 1./44100, 1./44100)
+                                        #reduce overlapping, if necessary
+    t = np.arange(x*xlen, x*xlen + xlen - 0./44100, 1./44100)
     tone = np.zeros(t.size)
     yp = 0
     for y in range(yres):
-        if magnitude(d[x+xres*y]) > 0:# and y - yp > 1:
-            print x+xres*y, "({0}, {1})".format(x, y),\
-                  d[x+xres*y], magnitude(d[x+xres*y]), 200*(yres-y)
-            yp = y
-                                                         #scale  #shift
-            p = d[x+xres*y]
-            tone = np.add(tone, oscillator(t,
-                                           amp=(p[0] + p[1] + p[2]) * 0.0001,
-                                           freq=200*(yres - y)))
-#    print tone
+        print x+xres*y, "({0}, {1})".format(x, y),\
+              d[x+xres*y], magnitude(d[x+xres*y]), 200*(yres-y)
+        yp = y
+
+        p = d[x+xres*y]
+        tone = np.add(tone, oscillator(t,
+                                       amp=(p[0] + p[1] + p[2]),
+                                       freq=22500 / yres * (yres - y)))
     out = np.append(out,tone)
+
 #    print out, out.size
-out = np.append(out, np.zeros(44100 * 30 - out.size))
-print out.size
-t = np.arange(0, 10, 1./44100)
+#pad with black at end if necessary
+if out.size < 44100 * 30:
+    out = np.append(out, np.zeros(44100 * 30 - out.size))
+#print out.size
+
+#constant tone experiments
+#t = np.arange(0, 10, 1./44100)
 #freq = oscillator(t, freq=6, amp=15, base=1000)
 #tone = oscillator(t, freq=freq, amp=0.1)
-tone = oscillator(t, freq=1000)
-t = np.arange(10, 20, 1./44100)
+#tone = oscillator(t, freq=1000)
+#t = np.arange(10, 20, 1./44100)
 #tone = np.add(tone, oscillator(t, freq=5000))
-tone = np.append(tone, oscillator(t, freq=10000))
-t = np.arange(20, 30, 1./44100)
-tone = np.append(tone, oscillator(t, freq=15000))
+#tone = np.append(tone, oscillator(t, freq=10000))
+#t = np.arange(20, 30, 1./44100)
+#tone = np.append(tone, oscillator(t, freq=15000))
 #tone = np.add(tone, oscillator(t, freq=440))
-print tone.size
+#print tone.size
 
 writewav('spam.wav', out)
-writewav('spam2.wav', tone)
+#writewav('spam2.wav', tone)
