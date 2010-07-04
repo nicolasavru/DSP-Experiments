@@ -1,0 +1,2 @@
+python imageToWav.py [infile] [outfile]
+python imageToWav-pycuda.py [infile] [outfile]

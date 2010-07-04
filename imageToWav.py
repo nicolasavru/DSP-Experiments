@@ -3,15 +3,10 @@ import Image
 
 import struct
 import math
-
-import pycuda.autoinit
-import pycuda.driver as drv
-import pycuda.gpuarray as gpuarray
-import pycuda.cumath as cm
-from pycuda.compiler import SourceModule
+import sys
 
 def oscillator(x, freq=1, amp=1, base=0, phase=0):
-    return base + amp * cm.sin(2 * np.pi * freq * x + phase)
+    return base + amp * np.sin(2 * np.pi * freq * x + phase)
 
 def writewav(filename, numChannels, sampleRate, bitsPerSample, time, data):
     wave = open(filename, 'wb')
@@ -46,14 +41,12 @@ def writewav(filename, numChannels, sampleRate, bitsPerSample, time, data):
     # write float64 data as signed int16
     #amplitude/volume, max value is 32768
     #higher amplitude causes noise (vertical bars)
-#    (0.01 * data).astype(np.int16).tofile(wave)
     (1000 * data).astype(np.int16).tofile(wave)
 
     wave.close()
 
-#im = Image.open("reddit.jpg")
-im = Image.open("fract.jpg")
-#im = Image.open("test3.png")
+
+im = Image.open(sys.argv[1])
 size = im.size
 d = list(im.getdata())
 
@@ -65,16 +58,17 @@ time = int(round(22.0 * xres / yres))
 xlen = time / float(size[0])
 #print xlen
 
-#initialize out to a 0
+#initialize out
 out = np.zeros(0)
 
+#rgb aliases
 r=0
 g=1
 b=2
 
 for x in range(xres):
-    t_gpu = gpuarray.arange(x*xlen, x*xlen + xlen, 1./44100, dtype=np.float32)
-    tone_gpu = gpuarray.zeros(t_gpu.size, dtype=np.float32)
+    t = np.arange(x*xlen, x*xlen + xlen, 1./44100)
+    tone = np.zeros(t.size)
     print "{0}%".format(round(100.0 * x / xres, 2))
     for y in range(yres):
         p = d[x+xres*y]
@@ -84,24 +78,19 @@ for x in range(xres):
 #        amplitude = math.log(amplitude+1)# / math.log(255)
 #        print x, y, amplitude
         if p[r] > 10 or p[g] > 10 and p[b] > 10:
-            tone_gpu += oscillator(t_gpu,
-                                   amp = amplitude,
-                                   #amp=(p[r]+p[g]+p[b]),
-                                   freq=yscale * (yres - y))
-    tone_gpu = tone_gpu + 1
-#    cm.log10(tone_gpu)
-#    cm.log10(tone_gpu)
-#    cm.log10(tone_gpu)
-#    cm.log10(tone_gpu)
-#    cm.log10(tone_gpu)
-    cm.log(tone_gpu)
-    tone_gpu = tone_gpu / math.log(128) #not much faster than multiple logs
-    tone = tone_gpu.get()
+            tone += oscillator(t,
+                               amp=amplitude,
+                               #amp=(p[r]+p[g]+p[b]),
+                               freq=yscale * (yres - y))
+    tone = tone + 1
+#    tone = np.log(tone)
+    tone = tone / math.log(128)
     out = np.append(out,tone)
+
 
 #pad with silence at end if necessary
 if out.size < 44100 * time:
     out = np.append(out, np.zeros(44100 * time - out.size))
 #print out.size
 
-writewav('spam.wav', 1, 44100, 16, time, out)
+writewav(sys.argv[2], 1, 44100, 16, time, out)
