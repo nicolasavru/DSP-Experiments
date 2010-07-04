@@ -39,11 +39,11 @@ def writewav(filename, numChannels, sampleRate, bitsPerSample, time, data):
     # write float64 data as signed int16
     #amplitude/volume, max value is 32768
     #higher amplitude causes noise (vertical bars)
-    (0.5 * data).astype(np.int16).tofile(wave)
+    (.1 * data).astype(np.int16).tofile(wave)
 
     wave.close()
 
-im = Image.open("reddit.jpg")
+im = Image.open("fract.jpg")
 size = im.size
 d = list(im.getdata())
 #print d
@@ -52,7 +52,7 @@ d = list(im.getdata())
 
 xres = size[0]
 yres = size[1]
-time = int(round(22.5 * xres / yres))
+time = 10 * int(round(22.5 * xres / yres))
 #print time
 xlen = time / float(size[0])
 #print xlen
@@ -65,13 +65,15 @@ for x in range(xres):
     t = np.arange(x*xlen, x*xlen + xlen, 1./44100)
     tone = np.zeros(t.size)
     for y in range(yres):
-        print x+xres*y, "({0}, {1})".format(x, y),\
-              d[x+xres*y], 200*(yres-y)
-
         p = d[x+xres*y]
+        print x+xres*y, "({0}, {1})".format(x, y),\
+              d[x+xres*y], 22000 / yres * (yres - y),\
+              (p[0] + p[1] + p[2]), 10**((p[0]+p[1]+p[2])/(255 * 3.0))
+
+
         tone = np.add(tone, oscillator(t,
-                                       amp=(p[0] + p[1] + p[2]),
-                                       freq=22500 / yres * (yres - y)))
+                                       amp=10**(1 + (p[0]+p[1]+p[2])/(255)),
+                                       freq=22000 / yres * (yres - y)))
     out = np.append(out,tone)
 
 #    print out, out.size
