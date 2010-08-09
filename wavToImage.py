@@ -1,11 +1,10 @@
-# STDLIB
 import wave
 import sys
 import struct
 import math
 
 import render
-# Dependencies
+
 import numpy as np
 
 xres = 1000
@@ -21,18 +20,17 @@ frames = wav.readframes(nframes * nchannels)
 out = struct.unpack_from("%dh" % nframes * nchannels, frames)
 
 sound = np.array(out)
-print sound
 
 interval = nframes / xres
 print interval, nframes
 
-screen = render.createScreen(xres, interval/2)#yres)
+screen = render.createScreen(xres, interval/2)
 
 def generateColor(val):
     v = math.log(abs(val)+.001)*10
 
 for x in range(xres):
-    fft = np.fft.rfft(sound[x*interval:(x+1)*interval])
+#    fft = np.fft.rfft(sound[x*interval:(x+1)*interval])
     fft = np.fft.rfft(sound[x*interval:(x+1)*interval+10])
     fft = [z.real for z in fft]
 #    print len(fft)
@@ -47,9 +45,4 @@ for x in range(xres):
         render.plot(xres-x, interval/2-y, c, screen)
 
 #render.display(screen)
-render.saveExtension(screen, "out2.png")
-
-
-
-fft = np.fft.rfft(sound)
-print fft
+render.saveExtension(screen, sys.argv[2])
