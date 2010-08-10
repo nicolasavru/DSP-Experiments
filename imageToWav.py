@@ -81,46 +81,37 @@ time = int(round(22.0 * xres / yres))
 xlen = time / float(size[0])
 
 
+#because this is easier than finding the flag to disable broadcasting
+out = [np.zeros(0), np.zeros(0), np.zeros(0)] #more mehh
+for x in xrange(xres):
+    t = np.arange(x*xlen, x*xlen + xlen, 1./SAMPLE_RATE)
+    tones = [np.zeros(t.size), np.zeros(t.size), np.zeros(t.size)] # mehh
+    print "{0}: {1}%".format("Color" if ARG_COLOR else "Grayscale",
+                             round(100.0 * x / xres, 2))
 
-# Initilize out
-out = np.zeros(0)
+    for y in xrange(yres):
+        p = d[x+xres*y]
+        for c in range(CHANNELS):
+            if p[c] > 10 or p[R] > 10 or p[G] > 10 or p[B] > 10:
+                if ARG_COLOR:
+                    amplitude = 10**(1-5.25+4.25*(p[c])/(255))
+                else:
+                    amplitude = 10**(1-5.25+4.25*(p[R]+p[G]+p[B])/(255*3))
+                tones[c] += oscillator(t, amp=amplitude, freq=yscale * (yres - y))
+    for c in range(CHANNELS):
+        tones[c] = tones[c] + 1
+        tones[c] = tones[c] / math.log(128)
+        out[c] = np.append(out[c],tones[c])
+
 
 if ARG_COLOR:
-    for x in xrange(xres):
-        t = np.arange(x*xlen, x*xlen + xlen, 1./SAMPLE_RATE)
-        tones = [np.zeros(t.size), np.zeros(t.size), np.zeros(t.size)] # mehh
-        print "Color: {0}%".format(round(100.0 * x / xres, 2))
-        for y in xrange(yres):
-            p = d[x+xres*y]
-            for c in range(CHANNELS):
-                if p[c] > 10:
-                    amplitude = 10**(1-5.25+4.25*(p[c])/(255))
-                    tones[c] += oscillator(t, amp=amplitude, freq=yscale * (yres - y))
-        for c in range(CHANNELS):
-            tones[c] = tones[c] + 1
-            tones[c] = tones[c] / math.log(128)
-            out = np.append(out,tones[c])
-
+    out = np.array(out)
+    out = out.flatten('F')
 else:
-    for x in xrange(xres):
-        t = np.arange(x*xlen, x*xlen + xlen, 1./SAMPLE_RATE)
-        tone = np.zeros(t.size)
-        print "Grayscale: {0}%".format(round(100.0 * x / xres, 2))
-        for y in xrange(yres):
-            p = d[x+xres*y]
-            if p[R] > 10 or p[G] > 10 and p[B] > 10:
-                # keep playing with these values
-                # print amplitude, math.log(amplitude+1)
-                # amplitude = math.log(amplitude+1)# / math.log(255)
-                # print x, y, amplitude
-                amplitude = 10**(1-5.25+4.25*(p[R]+p[G]+p[B])/(255*3))
-                tone += oscillator(t, amp=amplitude, freq=yscale * (yres - y))
-        tone = tone + 1
-        tone = tone / math.log(128)
-        out = np.append(out,tone)
+    out = out[0]
 
 #pad with silence at end if necessary
-if out.size < SAMPLE_RATE * time:
-    out = np.append(out, np.zeros(SAMPLE_RATE * time - out.size))
+if out.size < SAMPLE_RATE * time * CHANNELS:
+    out = np.append(out, np.zeros(SAMPLE_RATE * time *CHANNELS - out.size))
 
 writewav(ARG_OUTFILE, CHANNELS, SAMPLE_RATE, 16, time, out)
