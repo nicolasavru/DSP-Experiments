@@ -47,7 +47,7 @@ for x in range(xres):
              math.log(abs(fft[y])+.001)*10,
              math.log(abs(fft[y])+.001)*10]
 #        print x, y, c
-        render.plot(xres-x, interval/2-y, c, screen)
+        render.plot(x, interval/2-y, c, screen)
 
 #render.display(screen)
 render.saveExtension(screen, sys.argv[2])
