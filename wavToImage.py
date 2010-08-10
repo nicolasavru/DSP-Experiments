@@ -27,10 +27,17 @@ for f in xrange(nframes*3):
 # set this to the number of the channel you want to use
 channel = 0
 #loadWav(fname)
+time = float(nframes) / framerate
+print time, framerate
+yres = int(22 * xres / time)
+print yres
+#yscale = float(yres) / 22000
+
+
 interval = nframes / xres
 print interval, nframes
 
-screen = render.createScreen(xres, interval/2)
+screen = render.createScreen(xres, yres)
 
 def generateColor(val):
     v = math.log(abs(val)+.001)*10
@@ -45,16 +52,12 @@ for x in range(xres):
 #    print len(fft)
 #    print fft
     print "{0}%".format(round(100.0 * x / xres, 2))
-    for y in range(interval/2):
-#        p = d[x+xres*y]
-        # c = [math.log(abs(fft0[y])+.001)*10,
-        #     math.log(abs(fft1[y])+.001)*10,
-        #     math.log(abs(fft2[y])+.001)*10]
-        c = [abs(fft0[y]/100),
-             abs(fft1[y]/100),
-             abs(fft2[y]/100)]
-        print x, y, c
-        render.plot(x, interval/2-y, c, screen)
+    for y in range(interval / 2):
+        c = [math.log(abs(fft0[y])+.001)*10,
+            math.log(abs(fft1[y])+.001)*10,
+            math.log(abs(fft2[y])+.001)*10]
+#        print x, y, c
+        render.plot(x, yres-y, c, screen)
 
 #render.display(screen)
 render.saveExtension(screen, sys.argv[2])
