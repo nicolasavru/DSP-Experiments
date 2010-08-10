@@ -21,9 +21,8 @@ wav.close()
 
 print nchannels, nframes
 data = np.zeros((nchannels, nframes), np.int16)
-for f in xrange(nframes):
-    for c in xrange(nchannels):
-        data[c][f] = out[f+c]
+for f in xrange(nframes*3):
+    data[f%3][f/3] = out[f] #integer division used intentionally
 
 # set this to the number of the channel you want to use
 channel = 0
@@ -48,12 +47,12 @@ for x in range(xres):
     print "{0}%".format(round(100.0 * x / xres, 2))
     for y in range(interval/2):
 #        p = d[x+xres*y]
-        c = [math.log(abs(fft0[y])+.001)*10,
-            math.log(abs(fft1[y])+.001)*10,
-            math.log(abs(fft2[y])+.001)*10]
-        # c = [abs(fft0[y]/100),
-        #      abs(fft1[y]/100),
-        #      abs(fft2[y]/100)]
+        # c = [math.log(abs(fft0[y])+.001)*10,
+        #     math.log(abs(fft1[y])+.001)*10,
+        #     math.log(abs(fft2[y])+.001)*10]
+        c = [abs(fft0[y]/100),
+             abs(fft1[y]/100),
+             abs(fft2[y]/100)]
         print x, y, c
         render.plot(x, interval/2-y, c, screen)
 
