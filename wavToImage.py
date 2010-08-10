@@ -13,19 +13,21 @@ yres = 1000
 fname = sys.argv[1]
 
 # http://stackoverflow.com/questions/2063284/what-is-the-easiest-way-to-read-wav-files-using-python-summary
-
 wav = wave.open (fname, "r")
 nchannels, sampwidth, framerate, nframes, comptype, compname = wav.getparams()
 frames = wav.readframes(nframes * nchannels)
 out = struct.unpack_from("%dh" % nframes * nchannels, frames)
-wav.close(); wav = []
-for c in xrange(nchannels):
-	wav.append([out[i] for i in xrange(c, len(out), nchannels)])
-wav = np.array(wav)
+wav.close()
+
+print nchannels, nframes
+data = np.zeros((nchannels, nframes), "float64")
+for f in xrange(nframes):
+    for c in xrange(nchannels):
+        data[c][f] = out[f+c]
 
 # set this to the number of the channel you want to use
 channel = 0
-
+#loadWav(fname)
 interval = nframes / xres
 print interval, nframes
 
@@ -36,7 +38,7 @@ def generateColor(val):
 
 for x in range(xres):
 #    fft = np.fft.rfft(sound[x*interval:(x+1)*interval])
-    fft = np.fft.rfft(wav[channel][x*interval:(x+1)*interval+10])
+    fft = np.fft.rfft(data[channel][x*interval:(x+1)*interval+10])
     fft = [z.real for z in fft]
 #    print len(fft)
 #    print fft
