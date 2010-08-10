@@ -18,7 +18,7 @@ ARG_OUTFILE = sys.argv[3]
 ARG_COLOR = False
 if sys.argv[1] == "c":
     ARG_COLOR = True
-    
+
 CHANNELS = 1
 if ARG_COLOR:
     CHANNELS = 3
@@ -100,6 +100,7 @@ if ARG_COLOR:
             tones[c] = tones[c] + 1
             tones[c] = tones[c] / math.log(128)
             out = np.append(out,tones[c])
+
 else:
     for x in xrange(xres):
         t = np.arange(x*xlen, x*xlen + xlen, 1./SAMPLE_RATE)
