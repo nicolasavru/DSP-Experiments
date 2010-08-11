@@ -13,24 +13,24 @@ yres = 1000
 fname = sys.argv[1]
 
 # http://stackoverflow.com/questions/2063284/what-is-the-easiest-way-to-read-wav-files-using-python-summary
+print "Loading WAV..."
+
 wav = wave.open (fname, "r")
 nchannels, sampwidth, framerate, nframes, comptype, compname = wav.getparams()
 frames = wav.readframes(nframes * nchannels)
 out = struct.unpack_from("%dh" % nframes * nchannels, frames)
 wav.close()
 
-print nchannels, nframes
 data = np.zeros((nchannels, nframes), np.int16)
-for f in xrange(nframes*3):
-    data[f%3][f/3] = out[f] #integer division used intentionally
+for f in xrange(nframes*nchannels):
+    data[f%nchannels][f/nchannels] = out[f] #integer division used intentionally
+
+print "Computing Aspect Ratio..."
 
 # set this to the number of the channel you want to use
 channel = 0
-#loadWav(fname)
 time = float(nframes) / framerate
-print time, framerate
 yres = int(22 * xres / time)
-print yres
 #yscale = float(yres) / 22000
 
 
@@ -42,22 +42,27 @@ screen = render.createScreen(xres, yres)
 def generateColor(val):
     v = math.log(abs(val)+.001)*10
 
-for x in range(xres):
-    fft0 = np.fft.rfft(data[0][x*interval:(x+1)*interval+10])
-    fft1 = np.fft.rfft(data[1][x*interval:(x+1)*interval+10])
-    fft2 = np.fft.rfft(data[2][x*interval:(x+1)*interval+10])
-    fft0 = [z.real for z in fft0]
-    fft1 = [z.real for z in fft1]
-    fft2 = [z.real for z in fft2]
-#    print len(fft)
-#    print fft
+print "Generating Spectrogram..."
+
+for x in xrange(xres):
+    fft = list()
+    for c in range(nchannels):
+        foo = np.fft.rfft(data[c][x*interval:(x+1)*interval+10])
+        fft.append([z.real for z in foo])
     print "{0}%".format(round(100.0 * x / xres, 2))
-    for y in range(interval / 2):
-        c = [math.log(abs(fft0[y])+.001)*10,
-            math.log(abs(fft1[y])+.001)*10,
-            math.log(abs(fft2[y])+.001)*10]
-#        print x, y, c
+    for y in xrange(interval / 2):
+        if nchannels == 3:
+            c = [math.log(abs(fft[0][y])+.001)*10,
+                math.log(abs(fft[1][y])+.001)*10,
+                math.log(abs(fft[2][y])+.001)*10]
+        else:
+            c = [math.log(abs(fft[0][y])+.001)*10,
+                math.log(abs(fft[0][y])+.001)*10,
+                math.log(abs(fft[0][y])+.001)*10]
         render.plot(x, yres-y, c, screen)
 
+print "Encoding Image File..."
 #render.display(screen)
 render.saveExtension(screen, sys.argv[2])
+
+print "Done."
