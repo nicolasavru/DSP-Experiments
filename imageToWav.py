@@ -4,14 +4,17 @@ import Image, struct, math, sys
 """
 
 Usage:
-    ./imageToWav.py [c|b] image_path wav_path
+    ./imageToWav.py c|b image_path wav_path
 
 """
 
 
-##### DEFINES AND ARGS #####
+##### DEFS AND ARGS #####
 
 SAMPLE_RATE = 44100
+
+YRES = 400
+T_PER_COL = 0.03
 
 ARG_IMAGE = sys.argv[2]
 ARG_OUTFILE = sys.argv[3]
@@ -34,9 +37,9 @@ B=2
 def oscillator(x, freq=1, amp=1, base=0, phase=0):
     return base + amp * np.sin(2 * np.pi * freq * x + phase)
 
-def writewav(filename, numChannels, sampleRate, bitsPerSample, time, data):
+def writewav(filename, numChannels, sampleRate, bitsPerSample, nSamples, data):
     wave = open(filename, 'wb')
-    dataSize = time * sampleRate *  numChannels * bitsPerSample / 8
+    dataSize = nSamples *  numChannels * bitsPerSample / 8
     #https://ccrma.stanford.edu/courses/422/projects/WaveFormat/
     ChunkID = 'RIFF'
     ChunkSize = struct.pack('<I', dataSize + 36)
@@ -55,12 +58,6 @@ def writewav(filename, numChannels, sampleRate, bitsPerSample, time, data):
              AudioFormat + NumChannels + SampleRate + ByteRate + BlockAlign +\
              BitsPerSample + Subchunk2ID + Subchunk2Size
     wave.write(header)
-    # wav header: 30 s at 44100 Hz, 1 channel of 16 bit signed samples
-    # wave.write('RIFF\x14`(\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00D'
-    #            '\xac\x00\x00\x88X\x01\x00\x02\x00\x10\x00data\xf0_(\x00')
-    # little endian
-    # write float64 data as signed int16
-    # amplitude/volume, max value is 32768
     # higher amplitude causes noise (vertical bars)
     print "Packing WAV..."
     (1000 * data).astype(np.int16).tofile(wave)
@@ -71,24 +68,30 @@ def writewav(filename, numChannels, sampleRate, bitsPerSample, time, data):
 
 # Open image and extract pixel data
 im = Image.open(ARG_IMAGE)
-size = im.size
+xres = im.size[0]
+yres = im.size[1]
+# resize to 500px height for convenience
+im = im.resize((int((float(xres)/yres)*YRES), YRES), Image.BICUBIC)
 d = list(im.getdata())
 
-xres = size[0]
-yres = size[1]
+# either the column width or the song length must be fixed width
+# and if song length is fixed, we have to limit the frequency
+# spectrum we use to maintain aspect ratio
+xres = im.size[0]
+yres = im.size[1]
 yscale = 22000 / float(yres)
-time = int(round(22.0 * xres / yres))
-xlen = time / float(size[0])
+# 1/100 of a second of audio for every column in image
+sampsPerCol = int(SAMPLE_RATE*T_PER_COL)
 
 
 #because this is easier than finding the flag to disable broadcasting
 out = [np.zeros(0), np.zeros(0), np.zeros(0)] #more mehh
+elfMagic = (float(sampsPerCol)/SAMPLE_RATE)
 for x in xrange(xres):
-    t = np.arange(x*xlen, x*xlen + xlen, 1./SAMPLE_RATE)
-    tones = [np.zeros(t.size), np.zeros(t.size), np.zeros(t.size)] # mehh
+    t = np.linspace(x*elfMagic, (x+1)*elfMagic, num=sampsPerCol)
+    tones = [np.zeros(sampsPerCol), np.zeros(sampsPerCol), np.zeros(sampsPerCol)] # mehh
     print "{0}: {1}%".format("Color" if ARG_COLOR else "Grayscale",
                              round(100.0 * x / xres, 2))
-
     for y in xrange(yres):
         p = d[x+xres*y]
         for c in range(CHANNELS):
@@ -110,8 +113,4 @@ if ARG_COLOR:
 else:
     out = out[0]
 
-#pad with silence at end if necessary
-if out.size < SAMPLE_RATE * time * CHANNELS:
-    out = np.append(out, np.zeros(SAMPLE_RATE * time *CHANNELS - out.size))
-
-writewav(ARG_OUTFILE, CHANNELS, SAMPLE_RATE, 16, time, out)
+writewav(ARG_OUTFILE, CHANNELS, SAMPLE_RATE, 16, int(xres*sampsPerCol), out)

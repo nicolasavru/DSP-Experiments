@@ -1,63 +1,79 @@
-import wave
-import sys
-import struct
-import math
-
-import render
-
+import wave, sys, struct, math
+import Image
 import numpy as np
 
-xres = 1000
-yres = 1000
+"""
 
-fname = sys.argv[1]
+Usage:
+    ./wavToImage.py wav_path img_path
 
+"""
+
+
+
+##### DEFS AND ARGS #####
+
+YRES = 400
+T_PER_COL = 0.03
+
+ARG_WAVFILE = sys.argv[1]
+ARG_IMGFILE = sys.argv[2]
+
+
+##### MAIN ROUTINE #####
+
+print "Loading WAV..."
+
+# Load wav file into array
 # http://stackoverflow.com/questions/2063284/what-is-the-easiest-way-to-read-wav-files-using-python-summary
-wav = wave.open (fname, "r")
+wav = wave.open (ARG_WAVFILE, "r")
 nchannels, sampwidth, framerate, nframes, comptype, compname = wav.getparams()
 frames = wav.readframes(nframes * nchannels)
 out = struct.unpack_from("%dh" % nframes * nchannels, frames)
 wav.close()
 
-print nchannels, nframes
+# Separate loaded frames by channel
 data = np.zeros((nchannels, nframes), np.int16)
-for f in xrange(nframes*3):
-    data[f%3][f/3] = out[f] #integer division used intentionally
+for f in xrange(nframes*nchannels):
+    data[f%nchannels][f/nchannels] = out[f] # integer division used intentionally
 
-# set this to the number of the channel you want to use
-channel = 0
-#loadWav(fname)
-time = float(nframes) / framerate
-print time, framerate
-yres = int(22 * xres / time)
-print yres
-#yscale = float(yres) / 22000
+# Compute the dimensions of the encoded image
+# Setup some constants for decoding
+sampsPerCol = framerate*T_PER_COL
+yres = YRES
+xres = int(math.ceil((nframes)/sampsPerCol))
+
+# Create a PIL Image
+if nchannels == 3:
+    im = Image.new("RGB", (xres+1, yres+1))
+else:
+    im = Image.new("L", (xres+1, yres+1))
 
 
-interval = nframes / xres
-print interval, nframes
+print "Generating Spectrogram..."
 
-screen = render.createScreen(xres, yres)
-
-def generateColor(val):
-    v = math.log(abs(val)+.001)*10
-
-for x in range(xres):
-    fft0 = np.fft.rfft(data[0][x*interval:(x+1)*interval+10])
-    fft1 = np.fft.rfft(data[1][x*interval:(x+1)*interval+10])
-    fft2 = np.fft.rfft(data[2][x*interval:(x+1)*interval+10])
-    fft0 = [z.real for z in fft0]
-    fft1 = [z.real for z in fft1]
-    fft2 = [z.real for z in fft2]
-#    print len(fft)
-#    print fft
+# Loop over all "slices" in WAV file. 
+for x in xrange(xres):
+    fft = list()
+    # Perform an FFT on the sound contained in each slice
+    for c in range(nchannels):
+        foo = np.fft.rfft(data[c][x*sampsPerCol:(x+1)*sampsPerCol])
+        fft.append([z.real for z in foo])
     print "{0}%".format(round(100.0 * x / xres, 2))
-    for y in range(interval / 2):
-        c = [math.log(abs(fft0[y])+.001)*10,
-            math.log(abs(fft1[y])+.001)*10,
-            math.log(abs(fft2[y])+.001)*10]
-#        print x, y, c
-        render.plot(x, yres-y, c, screen)
+    # Compute pixel colors from fft result
+    for y in xrange(len(fft[0])):
+        if nchannels == 3:
+            c = (int(math.log(abs(fft[0][y])+.001)*10),
+                int(math.log(abs(fft[1][y])+.001)*10),
+                int(math.log(abs(fft[2][y])+.001)*10))
+        else:
+            c = int(math.log(abs(fft[0][y])+.001)*10)
+        # Plot pixels, scaling to YRES
+        im.putpixel((int(x), int(yres-int(((float(y)/len(fft[0]))*YRES)))), c)
 
-#render.display(screen)
-render.saveExtension(screen, sys.argv[2])
+print "Encoding Image File..."
+
+# Save image file using PIL
+im.save(ARG_IMGFILE, ARG_IMGFILE.split(".")[-1].upper())
+
+print "Done."
