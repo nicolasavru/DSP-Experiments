@@ -1,14 +1,9 @@
-import wave
-import sys
-import struct
-import math
-
-import render
-
+import wave, sys, struct, math
+import Image
 import numpy as np
 
-xres = 1000
-yres = 1000
+YRES = 300
+T_PER_COL = 0.02
 
 fname = sys.argv[1]
 
@@ -27,17 +22,21 @@ for f in xrange(nframes*nchannels):
 
 print "Computing Aspect Ratio..."
 
-# set this to the number of the channel you want to use
-channel = 0
-time = float(nframes) / framerate
-yres = int(22 * xres / time)
-#yscale = float(yres) / 22000
+
+sampsPerCol = framerate*T_PER_COL
+yres = YRES
+xres = math.ceil((nframes)/sampsPerCol)
 
 
 interval = nframes / xres
 print interval, nframes
 
-screen = render.createScreen(xres, yres)
+if nchannels == 3:
+    im = Image.new("RGB", (xres+1, yres+1))
+else:
+    im = Image.new("L", (xres+1, yres+1))
+
+print (xres, yres)
 
 def generateColor(val):
     v = math.log(abs(val)+.001)*10
@@ -47,22 +46,20 @@ print "Generating Spectrogram..."
 for x in xrange(xres):
     fft = list()
     for c in range(nchannels):
-        foo = np.fft.rfft(data[c][x*interval:(x+1)*interval+10])
+        foo = np.fft.rfft(data[c][x*sampsPerCol:(x+1)*sampsPerCol])
         fft.append([z.real for z in foo])
     print "{0}%".format(round(100.0 * x / xres, 2))
-    for y in xrange(interval / 2):
+    for y in xrange(len(fft[0])):
         if nchannels == 3:
-            c = [math.log(abs(fft[0][y])+.001)*10,
+            c = (math.log(abs(fft[0][y])+.001)*10,
                 math.log(abs(fft[1][y])+.001)*10,
-                math.log(abs(fft[2][y])+.001)*10]
+                math.log(abs(fft[2][y])+.001)*10)
         else:
-            c = [math.log(abs(fft[0][y])+.001)*10,
-                math.log(abs(fft[0][y])+.001)*10,
-                math.log(abs(fft[0][y])+.001)*10]
-        render.plot(x, yres-y, c, screen)
+            c = math.log(abs(fft[0][y])+.001)*10
+        im.putpixel((x, yres-int(((float(y)/len(fft[0]))*YRES))), c)
 
 print "Encoding Image File..."
 #render.display(screen)
-render.saveExtension(screen, sys.argv[2])
+im.save(sys.argv[2], sys.argv[2].split(".")[-1].upper())
 
 print "Done."
