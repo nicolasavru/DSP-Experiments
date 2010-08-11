@@ -2,64 +2,78 @@ import wave, sys, struct, math
 import Image
 import numpy as np
 
-YRES = 300
-T_PER_COL = 0.02
+"""
 
-fname = sys.argv[1]
+Usage:
+    ./wavToImage.py wav_path img_path
 
-# http://stackoverflow.com/questions/2063284/what-is-the-easiest-way-to-read-wav-files-using-python-summary
+"""
+
+
+
+##### DEFS AND ARGS #####
+
+YRES = 400
+T_PER_COL = 0.03
+
+ARG_WAVFILE = sys.argv[1]
+ARG_IMGFILE = sys.argv[2]
+
+
+##### MAIN ROUTINE #####
+
 print "Loading WAV..."
 
-wav = wave.open (fname, "r")
+# Load wav file into array
+# http://stackoverflow.com/questions/2063284/what-is-the-easiest-way-to-read-wav-files-using-python-summary
+wav = wave.open (ARG_WAVFILE, "r")
 nchannels, sampwidth, framerate, nframes, comptype, compname = wav.getparams()
 frames = wav.readframes(nframes * nchannels)
 out = struct.unpack_from("%dh" % nframes * nchannels, frames)
 wav.close()
 
+# Separate loaded frames by channel
 data = np.zeros((nchannels, nframes), np.int16)
 for f in xrange(nframes*nchannels):
-    data[f%nchannels][f/nchannels] = out[f] #integer division used intentionally
+    data[f%nchannels][f/nchannels] = out[f] # integer division used intentionally
 
-print "Computing Aspect Ratio..."
-
-
+# Compute the dimensions of the encoded image
+# Setup some constants for decoding
 sampsPerCol = framerate*T_PER_COL
 yres = YRES
-xres = math.ceil((nframes)/sampsPerCol)
+xres = int(math.ceil((nframes)/sampsPerCol))
 
-
-interval = nframes / xres
-print interval, nframes
-
+# Create a PIL Image
 if nchannels == 3:
     im = Image.new("RGB", (xres+1, yres+1))
 else:
     im = Image.new("L", (xres+1, yres+1))
 
-print (xres, yres)
-
-def generateColor(val):
-    v = math.log(abs(val)+.001)*10
 
 print "Generating Spectrogram..."
 
+# Loop over all "slices" in WAV file. 
 for x in xrange(xres):
     fft = list()
+    # Perform an FFT on the sound contained in each slice
     for c in range(nchannels):
         foo = np.fft.rfft(data[c][x*sampsPerCol:(x+1)*sampsPerCol])
         fft.append([z.real for z in foo])
     print "{0}%".format(round(100.0 * x / xres, 2))
+    # Compute pixel colors from fft result
     for y in xrange(len(fft[0])):
         if nchannels == 3:
-            c = (math.log(abs(fft[0][y])+.001)*10,
-                math.log(abs(fft[1][y])+.001)*10,
-                math.log(abs(fft[2][y])+.001)*10)
+            c = (int(math.log(abs(fft[0][y])+.001)*10),
+                int(math.log(abs(fft[1][y])+.001)*10),
+                int(math.log(abs(fft[2][y])+.001)*10))
         else:
-            c = math.log(abs(fft[0][y])+.001)*10
-        im.putpixel((x, yres-int(((float(y)/len(fft[0]))*YRES))), c)
+            c = int(math.log(abs(fft[0][y])+.001)*10)
+        # Plot pixels, scaling to YRES
+        im.putpixel((int(x), int(yres-int(((float(y)/len(fft[0]))*YRES)))), c)
 
 print "Encoding Image File..."
-#render.display(screen)
-im.save(sys.argv[2], sys.argv[2].split(".")[-1].upper())
+
+# Save image file using PIL
+im.save(ARG_IMGFILE, ARG_IMGFILE.split(".")[-1].upper())
 
 print "Done."

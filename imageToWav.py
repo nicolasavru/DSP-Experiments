@@ -9,12 +9,12 @@ Usage:
 """
 
 
-##### DEFINES AND ARGS #####
+##### DEFS AND ARGS #####
 
 SAMPLE_RATE = 44100
 
-YRES = 300
-T_PER_COL = 0.02
+YRES = 400
+T_PER_COL = 0.03
 
 ARG_IMAGE = sys.argv[2]
 ARG_OUTFILE = sys.argv[3]
@@ -58,12 +58,6 @@ def writewav(filename, numChannels, sampleRate, bitsPerSample, nSamples, data):
              AudioFormat + NumChannels + SampleRate + ByteRate + BlockAlign +\
              BitsPerSample + Subchunk2ID + Subchunk2Size
     wave.write(header)
-    # wav header: 30 s at 44100 Hz, 1 channel of 16 bit signed samples
-    # wave.write('RIFF\x14`(\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00D'
-    #            '\xac\x00\x00\x88X\x01\x00\x02\x00\x10\x00data\xf0_(\x00')
-    # little endian
-    # write float64 data as signed int16
-    # amplitude/volume, max value is 32768
     # higher amplitude causes noise (vertical bars)
     print "Packing WAV..."
     (1000 * data).astype(np.int16).tofile(wave)
