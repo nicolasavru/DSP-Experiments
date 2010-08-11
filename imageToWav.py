@@ -1,12 +1,28 @@
+"""
+
+imageToWav.py
+Encodes image data as an audio signal.
+One channel of audio per channel of image data.
+
+Author: Nicolas Avrutin, nicolasavru@gmail.com
+        Jordan Perr-Sauer, jordan@jperr.com
+
+Revision history:
+    See http://github.com/nicolasavru/DSP-Experiments
+
+Bugs:
+
+Todo:
+    - Tweak scaling/encoding algorithm to lessen artifacts
+    - Variable "slice" width for more space efficient encoding
+    
+"""
+
+
+##### IMPORTS #####
+
 import numpy as np
 import Image, struct, math, sys
-
-"""
-
-Usage:
-    ./imageToWav.py c|b image_path wav_path
-
-"""
 
 
 ##### DEFS AND ARGS #####

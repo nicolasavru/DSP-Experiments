@@ -1,14 +1,29 @@
-import wave, sys, struct, math
-import Image
+"""
+
+wavToImage.py
+Creates a spectrogram image from a wav file.
+Auto-detects color or grayscale.
+
+Author: Jordan Perr-Sauer, jordan@jperr.com
+        Nicolas Avrutin, nicolasavru@gmail.com
+
+Revision history:
+    See http://github.com/nicolasavru/DSP-Experiments
+
+Bugs:
+    - Scaling leaves nasty artifacts
+
+Todo:
+    - Tweak scaling/encoding algorithm to lessen artifacts
+    - Variable resolution spectrogram
+    
+"""
+
+
+##### IMPORTS #####
+
+import wave, sys, struct, math, Image
 import numpy as np
-
-"""
-
-Usage:
-    ./wavToImage.py wav_path img_path
-
-"""
-
 
 
 ##### DEFS AND ARGS #####
