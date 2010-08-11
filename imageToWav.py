@@ -4,7 +4,7 @@ import Image, struct, math, sys
 """
 
 Usage:
-    ./imageToWav.py [c|b] image_path wav_path
+    ./imageToWav.py c|b image_path wav_path
 
 """
 
