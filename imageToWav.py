@@ -15,7 +15,7 @@ Bugs:
 Todo:
     - Tweak scaling/encoding algorithm to lessen artifacts
     - Variable "slice" width for more space efficient encoding
-    
+
 """
 
 

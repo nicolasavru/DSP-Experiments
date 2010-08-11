@@ -16,7 +16,7 @@ Bugs:
 Todo:
     - Tweak scaling/encoding algorithm to lessen artifacts
     - Variable resolution spectrogram
-    
+
 """
 
 
@@ -67,7 +67,7 @@ else:
 
 print "Generating Spectrogram..."
 
-# Loop over all "slices" in WAV file. 
+# Loop over all "slices" in WAV file.
 for x in xrange(xres):
     fft = list()
     # Perform an FFT on the sound contained in each slice
