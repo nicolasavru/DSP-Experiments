@@ -96,15 +96,13 @@ d = list(im.getdata())
 xres = im.size[0]
 yres = im.size[1]
 yscale = 22000 / float(yres)
-# 1/100 of a second of audio for every column in image
 sampsPerCol = int(SAMPLE_RATE*T_PER_COL)
 
 
 #because this is easier than finding the flag to disable broadcasting
 out = [np.zeros(0), np.zeros(0), np.zeros(0)] #more mehh
-elfMagic = (float(sampsPerCol)/SAMPLE_RATE)
 for x in xrange(xres):
-    t = np.linspace(x*elfMagic, (x+1)*elfMagic, num=sampsPerCol)
+    t = np.linspace(x*T_PER_COL, (x+1)*T_PER_COL, num=sampsPerCol)
     tones = [np.zeros(sampsPerCol), np.zeros(sampsPerCol), np.zeros(sampsPerCol)] # mehh
     print "{0}: {1}%".format("Color" if ARG_COLOR else "Grayscale",
                              round(100.0 * x / xres, 2))
