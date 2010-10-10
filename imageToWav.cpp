@@ -104,7 +104,7 @@ int main(int argc, char *argv[]){
             p[G] = im.pixelColor(x, y).greenQuantum()/256;
             p[B] = im.pixelColor(x, y).blueQuantum()/256;
             for(c = 0; c < CHANNELS; c++){
-                //                if(p[c] > 10 or p[R] > 10 or p[G] > 10 or p[B] > 10){
+                if(p[c] > 10 or p[R] > 10 or p[G] > 10 or p[B] > 10){
                     if(ARG_COLOR){
                         amplitude = pow(10, 1-5.25+4.25*(p[c])/255);
                     }
@@ -112,9 +112,9 @@ int main(int argc, char *argv[]){
                         amplitude = pow(10, 1-5.25+4.25*(p[R]+p[G]+p[B])/(3*255));
                     }
                     for(i = 0; i < sampsPerCol; i++){
-                        tones[c][i] += 1000 * (oscillator(x*T_PER_COL+1 + i*T_PER_COL/sampsPerCol, yscale * (yres - y), amplitude))/l128;
+                        tones[c][i] += 1000 * (oscillator(x*T_PER_COL + i*T_PER_COL/sampsPerCol, yscale * (yres - y), amplitude))/l128;
                     }
-                    //                }
+                }
             }
         }
         for(i = 0; i < sampsPerCol; i++){
@@ -128,6 +128,11 @@ int main(int argc, char *argv[]){
 
     writewav(ARG_OUTFILE, CHANNELS, SAMPLE_RATE, BITS_PER_SAMPLE, (int) xres*sampsPerCol, out);
 
+    for(c = 0; c < CHANNELS; c++){
+        delete[] tones[c];
+    }
+    delete[] tones;
+    delete[] out;
 
     return 0;
 }
