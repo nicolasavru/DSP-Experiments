@@ -103,7 +103,6 @@ int main(int argc, char *argv[]){
             p[R] = im.pixelColor(x, y).redQuantum()/256;
             p[G] = im.pixelColor(x, y).greenQuantum()/256;
             p[B] = im.pixelColor(x, y).blueQuantum()/256;
-            //            cout << x << " " << y << endl;
             for(c = 0; c < CHANNELS; c++){
                 //                if(p[c] > 10 or p[R] > 10 or p[G] > 10 or p[B] > 10){
                     if(ARG_COLOR){
